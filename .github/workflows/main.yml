@@ -21,7 +21,7 @@ jobs:
             username: ${{ secrets.REGISTRY_USERNAME }}
             password: ${{ secrets.REGISTRY_PASSWORD }}
         - run: |
-            docker build . -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/deployreact:${{ github.sha }}
+            docker build . -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/deployreact:${{ github.sha }} --build-arg DEPLOY_ENVIRONMENT=${{ secrets.DEPLOY_ENVIRONMENT }}
             docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/deployreact:${{ github.sha }}
 
         - name: 'Deploy to Azure Container Instances'
