@@ -34,4 +34,4 @@ jobs:
             registry-username: ${{ secrets.REGISTRY_USERNAME }}
             registry-password: ${{ secrets.REGISTRY_PASSWORD }}
             name: deploy-react
-            location: 'west us'
+            location: 'southcentralus'
