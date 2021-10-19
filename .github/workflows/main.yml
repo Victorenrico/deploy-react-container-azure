@@ -17,6 +17,21 @@ jobs:
         runs-on: ubuntu-latest
         environment: Development
         steps:
+        
+        - name: get repository name
+          run: echo "BUILD_REPOSITORY_NAME=$(echo '${{ github.repository }}' | awk -F '/' '{print $2}')" >> $GITHUB_ENV
+          shell: bash
+        
+        - name: Extract branch name (non-production)
+          if: ${{ github.ref != 'refs/heads/main' }}
+          shell: bash
+          run: echo "BUILD_BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+
+        - name: Extract branch name (production)
+          if: ${{ github.ref == 'refs/heads/main' }}
+          shell: bash
+          run: echo "BUILD_BRANCH_NAME=$(echo 'production')" >> $GITHUB_ENV
+        
         # checkout the repo
         - name: 'Checkout GitHub Action'
           uses: actions/checkout@main
@@ -33,17 +48,20 @@ jobs:
             username: ${{ secrets.REGISTRY_USERNAME }}
             password: ${{ secrets.REGISTRY_PASSWORD }}
         - run: |
-            docker build . -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/deployreact:${{ github.sha }} --build-arg DEPLOY_ENVIRONMENT=${{ secrets.DEPLOY_ENVIRONMENT }}
-            docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/deployreact:${{ github.sha }}
+            docker build . -t goodyear.azurecr.io/${{ env.BUILD_REPOSITORY_NAME }}/deployreact:${{ github.sha }} --build-arg DEPLOY_ENVIRONMENT=${{ env.BUILD_BRANCH_NAME }}
+            docker push goodyear.azurecr.io/${{ env.BUILD_REPOSITORY_NAME }}/deployreact:${{ github.sha }}
 
-        - name: 'Deploy to Azure Container Instances'
-          uses: 'azure/aci-deploy@v1'
+        - uses: azure/aks-set-context@v1
           with:
-            resource-group: ${{ secrets.RESOURCE_GROUP }}
-            dns-name-label: ${{ secrets.RESOURCE_GROUP }}${{ secrets.DEPLOY_ENVIRONMENT }}
-            image: ${{ secrets.REGISTRY_LOGIN_SERVER }}/deployreact:${{ github.sha }}
-            registry-login-server: ${{ secrets.REGISTRY_LOGIN_SERVER }}
-            registry-username: ${{ secrets.REGISTRY_USERNAME }}
-            registry-password: ${{ secrets.REGISTRY_PASSWORD }}
-            name: deploy-react
-            location: 'southcentralus'
+            creds: '${{ secrets.AZURE_CREDENTIALS }}' # Azure credentials
+            resource-group: 'aks-${{ env.BUILD_BRANCH_NAME }}'
+            cluster-name: 'aks-${{ env.BUILD_BRANCH_NAME }}-001'
+          id: login
+          
+        - uses: azure/k8s-deploy@v1.4
+          with:
+            namespace: ${{ secrets.GDY_PROJECT_NAMESPACE }}
+            manifests: |
+              manifests/deployment.yml
+            images: |
+              goodyear.azurecr.io/${{ env.BUILD_REPOSITORY_NAME }}/deployreact:${{ github.sha }}
