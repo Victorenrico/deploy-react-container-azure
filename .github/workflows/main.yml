@@ -1,5 +1,11 @@
-on: [push]
 name: Linux_Container_Workflow
+
+on:
+  pull_request:
+    branches:
+      - master
+      - stage
+      - develop
 
 jobs:
     build-and-deploy:
