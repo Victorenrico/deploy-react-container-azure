@@ -10,7 +10,7 @@ on:
 jobs:
     build-and-deploy:
         runs-on: ubuntu-latest
-        environment: ${{ secrets.DEPLOY_ENVIRONMENT }}
+        environment: Development
         steps:
         # checkout the repo
         - name: 'Checkout GitHub Action'
