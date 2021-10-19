@@ -1,6 +1,11 @@
 name: Linux_Container_Workflow
 
 on:
+  push:
+    branches:
+      - master
+      - stage
+      - develop
   pull_request:
     branches:
       - master
